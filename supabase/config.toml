@@ -1,0 +1,10 @@
+project_id = "kaloyqomoehfmfexwtja"
+
+[functions.create-paymongo-checkout]
+verify_jwt = true
+
+[functions.cancel-paymongo-checkout]
+verify_jwt = true
+
+[functions.paymongo-webhook]
+verify_jwt = false
