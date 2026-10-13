@@ -28,6 +28,23 @@ function constantTimeHexEquals(expected: string, actual: string): boolean {
   return difference === 0;
 }
 
+function parsePaymongoSignature(
+  header: string,
+  mode: string,
+): { timestamp: string; signature: string } | null {
+  const parts = new Map<string, string>();
+  for (const part of header.split(",")) {
+    const separator = part.indexOf("=");
+    if (separator < 1) continue;
+    parts.set(part.slice(0, separator).trim(), part.slice(separator + 1).trim());
+  }
+
+  const timestamp = parts.get("t") ?? "";
+  const signature = parts.get(mode === "live" ? "li" : "te")?.toLowerCase() ?? "";
+  if (!/^\d+$/.test(timestamp) || !/^[a-f0-9]{64}$/.test(signature)) return null;
+  return { timestamp, signature };
+}
+
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
 
@@ -40,9 +57,15 @@ Deno.serve(async (request) => {
   }
 
   const rawBody = await request.text();
-  const signature = request.headers.get("Paymongo-Signature")?.trim() ?? "";
-  const expectedSignature = await hmacSha256Hex(webhookSecret, rawBody);
-  if (!constantTimeHexEquals(expectedSignature, signature)) {
+  const signature = parsePaymongoSignature(
+    request.headers.get("Paymongo-Signature") ?? "",
+    mode!,
+  );
+  if (!signature) return json({ error: "Invalid webhook signature." }, 401);
+
+  const signedPayload = `${signature.timestamp}.${rawBody}`;
+  const expectedSignature = await hmacSha256Hex(webhookSecret, signedPayload);
+  if (!constantTimeHexEquals(expectedSignature, signature.signature)) {
     return json({ error: "Invalid webhook signature." }, 401);
   }
 
