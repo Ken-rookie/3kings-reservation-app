@@ -144,6 +144,21 @@ class SupabaseService {
     return List<Map<String, dynamic>>.from(rows);
   }
 
+  Future<Map<String, dynamic>?> getMyBookingPaymentStatus(String bookingId) async {
+    final user = currentUser;
+    if (user == null) {
+      throw StateError('Sign in to refresh your payment status.');
+    }
+
+    final booking = await client
+        .from('court_bookings')
+        .select('id,status,payment_status')
+        .eq('id', bookingId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+    return booking == null ? null : Map<String, dynamic>.from(booking);
+  }
+
   Future<void> cancelBooking(String id) async {
     await client.rpc('cancel_court_booking', params: {'p_booking_id': id});
   }

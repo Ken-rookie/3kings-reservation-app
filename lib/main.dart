@@ -52,6 +52,10 @@ String paymentCallbackStatus(Uri uri) {
   return (params['payment'] ?? params['status'] ?? '').toLowerCase();
 }
 
+bool isBookingPaymentConfirmed(Map<String, dynamic>? booking) {
+  return booking?['payment_status']?.toString().toLowerCase() == 'paid';
+}
+
 bool supabaseReady = false;
 
 Future<void> main() async {
@@ -457,12 +461,15 @@ class _MainShellState extends State<MainShell> {
         SnackBar(
           content: Text(
             bookingId != null
-                ? 'Payment return received. Checking booking $bookingId…'
-                : 'Payment return received. Checking your booking…',
+                ? 'Payment submitted. Confirming booking $bookingId…'
+                : 'Payment submitted. Confirming your booking…',
           ),
           duration: const Duration(seconds: 3),
         ),
       );
+      if (bookingId != null) {
+        unawaited(_waitForPaymentConfirmation(bookingId));
+      }
     } else if (status == 'cancelled') {
       messenger?.showSnackBar(
         const SnackBar(
@@ -471,6 +478,48 @@ class _MainShellState extends State<MainShell> {
         ),
       );
     }
+  }
+
+  Future<void> _waitForPaymentConfirmation(String bookingId) async {
+    const maxAttempts = 15;
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      if (!mounted) return;
+      if (attempt > 0) await Future<void>.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+
+      try {
+        final booking = await SupabaseService.instance
+            .getMyBookingPaymentStatus(bookingId);
+        if (!isBookingPaymentConfirmed(booking)) continue;
+
+        setState(() {
+          bookingsRefreshKey++;
+          walletRefreshKey++;
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(
+            content: Text('Payment confirmed. Your booking status is updated.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      } catch (error) {
+        debugPrint('Could not refresh PayMongo booking status: $error');
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      bookingsRefreshKey++;
+      walletRefreshKey++;
+    });
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(
+        content: Text('Payment confirmation is still processing. Refresh your bookings shortly.'),
+        duration: Duration(seconds: 4),
+      ),
+    );
   }
 
   @override

@@ -39,6 +39,12 @@ void main() {
     expect(paymentCallbackStatus(callbackUri), 'cancelled');
   });
 
+  test('payment is considered confirmed only after Supabase reports paid', () {
+    expect(isBookingPaymentConfirmed({'payment_status': 'pending'}), isFalse);
+    expect(isBookingPaymentConfirmed({'payment_status': 'paid'}), isTrue);
+    expect(isBookingPaymentConfirmed(null), isFalse);
+  });
+
   test('PayMongo cancellation errors keep the backend message instead of a generic fallback', () {
     expect(
       SupabaseService.parseFunctionError(
