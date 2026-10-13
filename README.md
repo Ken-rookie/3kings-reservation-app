@@ -40,8 +40,8 @@ The app reads the rate from Supabase. To have an already-open screen update inst
 The customer app creates PayMongo Checkout Sessions through Supabase Edge Functions. The PayMongo secret key and webhook secret are never placed in Flutter or browser code. Use PayMongo test mode first; do not use live keys until test checkouts and webhook delivery have been verified.
 
 1. Link the Supabase CLI to this project (`supabase link --project-ref kaloyqomoehfmfexwtja`) or deploy the functions from the Supabase Dashboard.
-2. In Supabase Edge Function Secrets, set `PAYMONGO_SECRET_KEY` to the PayMongo secret key for the environment, `PAYMONGO_MODE` to `test` or `live`, and `PAYMONGO_RETURN_URL` to the customer app's HTTPS base URL. Optionally set `PAYMONGO_PAYMENT_METHOD_TYPES` to a comma-separated list of methods enabled for the merchant; the default is `card,gcash,paymaya,qrph`.
-3. Deploy `create-paymongo-checkout`, `cancel-paymongo-checkout`, and `paymongo-webhook`. The repository's `supabase/config.toml` keeps JWT verification on for the customer functions and disables it only for the webhook, which validates PayMongo's signature itself.
+2. In Supabase Edge Function Secrets, set `PAYMONGO_SECRET_KEY` to the PayMongo secret key for the environment, `PAYMONGO_MODE` to `test` or `live`, and `PAYMONGO_RETURN_URL` to `https://kaloyqomoehfmfexwtja.supabase.co/functions/v1/paymongo-return`. This public HTTPS callback redirects into the Android app's `com.example.threekings://payment/callback` deep link. Optionally set `PAYMONGO_PAYMENT_METHOD_TYPES` to a comma-separated list of methods enabled for the merchant; the default is `card,gcash,paymaya,qrph`.
+3. Deploy `create-paymongo-checkout`, `cancel-paymongo-checkout`, `paymongo-return`, and `paymongo-webhook`. The repository's `supabase/config.toml` keeps JWT verification on for the customer functions and disables it for the public return bridge and signed webhook.
 4. In PayMongo Dashboard → Developer Tools → Webhooks, register `https://kaloyqomoehfmfexwtja.supabase.co/functions/v1/paymongo-webhook` for `checkout_session.payment.paid`. Copy the endpoint secret shown by PayMongo and then add it to Supabase Edge Function Secrets as `PAYMONGO_WEBHOOK_SECRET`. Keep test and live API keys, modes, and webhook secrets paired with the matching environment.
 5. Complete a test checkout and confirm the webhook changes the booking to `confirmed` / `paid`. The browser redirect is not treated as payment proof.
 
@@ -50,6 +50,7 @@ For CLI deployment, after linking the project:
 ```powershell
 supabase functions deploy create-paymongo-checkout
 supabase functions deploy cancel-paymongo-checkout
+supabase functions deploy paymongo-return
 supabase functions deploy paymongo-webhook
 ```
 

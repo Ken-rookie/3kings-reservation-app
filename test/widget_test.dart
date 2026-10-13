@@ -22,14 +22,21 @@ void main() {
   });
 
   test('payment callback deep link is recognized and parsed', () {
-    final callbackUri = Uri.parse('com.example.threekings://payment/callback?status=success&booking_id=abc-123&session_id=cs_test_123');
+    final callbackUri = Uri.parse('com.example.threekings://payment/callback?payment=success&booking_id=abc-123&session_id=cs_test_123');
 
     expect(isAppPaymentCallbackUri(callbackUri), isTrue);
+    expect(paymentCallbackStatus(callbackUri), 'success');
     expect(parsePaymentCallbackUri(callbackUri), {
-      'status': 'success',
+      'payment': 'success',
       'booking_id': 'abc-123',
       'session_id': 'cs_test_123',
     });
+  });
+
+  test('payment callback reads cancellation status', () {
+    final callbackUri = Uri.parse('com.example.threekings://payment/callback?payment=cancelled&booking_id=abc-123');
+
+    expect(paymentCallbackStatus(callbackUri), 'cancelled');
   });
 
   test('PayMongo cancellation errors keep the backend message instead of a generic fallback', () {

@@ -47,6 +47,11 @@ Map<String, String> parsePaymentCallbackUri(Uri uri) {
   return data;
 }
 
+String paymentCallbackStatus(Uri uri) {
+  final params = parsePaymentCallbackUri(uri);
+  return (params['payment'] ?? params['status'] ?? '').toLowerCase();
+}
+
 bool supabaseReady = false;
 
 Future<void> main() async {
@@ -432,7 +437,7 @@ class _MainShellState extends State<MainShell> {
     if (!isAppPaymentCallbackUri(uri)) return;
 
     final params = parsePaymentCallbackUri(uri);
-    final status = (params['status'] ?? '').toLowerCase();
+    final status = paymentCallbackStatus(uri);
     final bookingId = params['booking_id'] ?? params['id'];
     final sessionId = params['session_id'] ?? params['checkout_session_id'];
 
@@ -447,15 +452,22 @@ class _MainShellState extends State<MainShell> {
     });
 
     final messenger = ScaffoldMessenger.maybeOf(context);
-    if (status == 'success' || bookingId != null || sessionId != null) {
+    if (status == 'success') {
       messenger?.showSnackBar(
         SnackBar(
           content: Text(
             bookingId != null
-                ? 'Payment received. Booking $bookingId is refreshing…'
-                : 'Payment received. Refreshing your booking…',
+                ? 'Payment return received. Checking booking $bookingId…'
+                : 'Payment return received. Checking your booking…',
           ),
           duration: const Duration(seconds: 3),
+        ),
+      );
+    } else if (status == 'cancelled') {
+      messenger?.showSnackBar(
+        const SnackBar(
+          content: Text('Payment was cancelled. Your booking status is refreshing…'),
+          duration: Duration(seconds: 3),
         ),
       );
     }
