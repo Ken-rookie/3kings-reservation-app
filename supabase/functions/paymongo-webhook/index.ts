@@ -77,7 +77,7 @@ Deno.serve(async (request) => {
   }
 
   const event = payload.data ?? payload;
-  const eventType = event.type ?? event.attributes?.type;
+  const eventType = event.attributes?.type ?? event.type;
   if (eventType !== "checkout_session.payment.paid") {
     const eventId = event.id ?? null;
     const ignoredType = typeof eventType === "string" ? eventType : null;
