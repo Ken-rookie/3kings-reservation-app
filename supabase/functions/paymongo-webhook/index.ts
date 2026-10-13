@@ -79,7 +79,10 @@ Deno.serve(async (request) => {
   const event = payload.data ?? payload;
   const eventType = event.type ?? event.attributes?.type;
   if (eventType !== "checkout_session.payment.paid") {
-    return json({ received: true, ignored: true });
+    const eventId = event.id ?? null;
+    const ignoredType = typeof eventType === "string" ? eventType : null;
+    console.warn("Ignoring unsupported PayMongo event.", { eventId, eventType: ignoredType });
+    return json({ received: true, ignored: true, event_id: eventId, event_type: ignoredType });
   }
 
   const session = event.attributes?.data ?? event.data;
