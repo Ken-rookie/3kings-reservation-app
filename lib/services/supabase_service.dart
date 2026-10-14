@@ -127,7 +127,7 @@ class SupabaseService {
     throw StateError('PayMongo could not cancel this checkout. Refresh bookings and try again.');
   }
 
-  Future<List<Map<String, dynamic>>> getMyBookings({bool past = false}) async {
+  Future<List<Map<String, dynamic>>> getMyBookings({bool past = false, bool all = false}) async {
     final user = currentUser;
     if (user == null) {
       throw StateError('Sign in to view your bookings.');
@@ -135,12 +135,14 @@ class SupabaseService {
 
     final now = DateTime.now().toUtc().toIso8601String();
     final query = client.from('court_bookings').select().eq('user_id', user.id);
-    final rows = past
+    final rows = all
+      ? await query.order('start_at', ascending: false)
+      : past
         ? await query.lt('end_at', now).order('start_at', ascending: false)
-      : await query
-        .gte('end_at', now)
-        .inFilter('status', ['pending', 'confirmed'])
-        .order('start_at');
+        : await query
+          .gte('end_at', now)
+          .inFilter('status', ['pending', 'confirmed'])
+          .order('start_at');
     return List<Map<String, dynamic>>.from(rows);
   }
 

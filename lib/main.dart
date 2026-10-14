@@ -565,7 +565,7 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(
             icon: Icon(Icons.account_balance_wallet_outlined),
             selectedIcon: Icon(Icons.account_balance_wallet, color: lime),
-            label: 'Wallet',
+            label: 'Booking History',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
@@ -1389,8 +1389,9 @@ class _BookingScreenState extends State<BookingScreen> {
 
 class BookingListScreen extends StatefulWidget {
   final bool past;
+  final bool all;
 
-  const BookingListScreen({super.key, required this.past});
+  const BookingListScreen({super.key, required this.past, this.all = false});
 
   @override
   State<BookingListScreen> createState() => _BookingListScreenState();
@@ -1402,12 +1403,12 @@ class _BookingListScreenState extends State<BookingListScreen> {
   @override
   void initState() {
     super.initState();
-    future = SupabaseService.instance.getMyBookings(past: widget.past);
+    future = SupabaseService.instance.getMyBookings(past: widget.past, all: widget.all);
   }
 
   Future<void> reload() async {
     if (!mounted) return;
-    final next = SupabaseService.instance.getMyBookings(past: widget.past);
+    final next = SupabaseService.instance.getMyBookings(past: widget.past, all: widget.all);
     setState(() {
       future = next;
     });
@@ -1511,7 +1512,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
               children: [
                 const Icon(Icons.calendar_month, size: 52, color: muted),
                 const SizedBox(height: 12),
-                Text(widget.past ? 'No past bookings' : 'No upcoming bookings'),
+                Text(widget.all ? 'No booking history' : widget.past ? 'No past bookings' : 'No upcoming bookings'),
                 const SizedBox(height: 8),
                 const Text(
                   'Your reservations will appear here.',
@@ -1664,43 +1665,19 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(18),
+      child: Column(
         children: [
-          const Text(
-            'Wallet',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 16),
-          CardPanel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Payment methods',
-                  style: TextStyle(color: muted),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Choose a payment method at checkout',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Walk-in · PayMongo hosted checkout',
-                  style: TextStyle(color: muted),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'PayMongo payments are confirmed by a secure server webhook. Walk-in payments are confirmed by court staff.',
-                  style: TextStyle(color: muted, height: 1.5),
-                ),
-              ],
+          const Padding(
+            padding: EdgeInsets.fromLTRB(18, 18, 18, 12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Booking History',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+              ),
             ),
           ),
-          const SizedBox(height: 18),
-          const SectionTitle('Booking payment history'),
-          const SizedBox(height: 360, child: BookingListScreen(past: true)),
+          const Expanded(child: BookingListScreen(past: false, all: true)),
         ],
       ),
     );
